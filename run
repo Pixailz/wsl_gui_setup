@@ -8,41 +8,48 @@ function check_root() {
 }
 
 function update() {
-  apt update && apt upgrade -y && apt dist-upgrade -y && apt autoremove -y
+  apt update && apt upgrade -y && apt autoremove -y
 }
 
 function install_desktop() {
   apt install tasksel -y
-  tasksel install ubuntu-desktop
-  tasksel install ubuntu-desktop-default-languages
-  apt install lightdm -y
-}
-
-function configure_bashrc() {
-  echo "export DISPLAY=$(grep -oP "(?<=nameserver ).+" /etc/resolve.conf):0" | tee -a ~/.bashrc
-  echo "export LIBGL_ALWAYS_INDIRECT=1" | tee -a ~/.bashrc
+  tasksel install ubuntu-desktop ubuntu-desktop-default-languages
 }
 
 function install_genie() {
   wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   dpkg -i packages-microsoft-prod.deb
-  echo "deb [trusted=yes] https://wsl-translinux.arkane-systems.net/apt/ /" | tee /etc/apt/sources.list.d/wsl-translinux.list
+  apt install dotnet-runtime-3.1 -y
+
+  echo "deb [trusted=yes] https://wsl-translinux.arkane-systems.net/apt/ /" > /etc/apt/sources.list.d/wsl-translinux.list
   apt update
-  apt install dotnet-runtime-3.1 systemd-genie -y
+  apt install systemd-genie -y
 }
 
 function copy_file() {
-  cp ./.start_genie ~/.start_genie
-  chmod +x ~/.start_genie
+  current_user=$(bash -c 'echo $SUDO_USER')
+  cp ./.start_genie /home/${current_user}/.start_genie
+  chmod +x /home/${current_user}/.start_genie
+}
+
+function setup_xdmcp() {
+  apt install lightdm -y
+  echo "[LightDM]" > /etc/lightdm/lightdm.conf
+  echo "start-default-seat=false" >> /etc/lightdm/lightdm.conf
+  echo "" >> /etc/lightdm/lightdm.conf
+  echo "[XDMCPServer]" >> /etc/lightdm/lightdm.conf
+  echo "enabled=true" >> /etc/lightdm/lightdm.conf
+  echo "port=177" >> /etc/lightdm/lightdm.conf
+  genie -c "sudo service lightdm restart"
 }
 
 function main() {
   check_root
   update
   install_desktop
-  configure_bashrc
   install_genie
   copy_file
+  setup_xdmcp
 }
 
 main
