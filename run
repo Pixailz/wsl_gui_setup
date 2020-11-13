@@ -1,0 +1,48 @@
+#!/bin/bash
+
+function check_root() {
+  if [[ "$EUID" -ne "0" ]];then
+    echo "Scripts must be run as root."
+    exit 1
+  fi
+}
+
+function update() {
+  apt update && apt upgrade -y && apt dist-upgrade -y && apt autoremove -y
+}
+
+function install_desktop() {
+  apt install tasksel -y
+  tasksel install ubuntu-desktop
+  tasksel install ubuntu-desktop-default-languages
+  apt install lightdm -y
+}
+
+function configure_bashrc() {
+  echo "export DISPLAY=$(grep -oP "(?<=nameserver ).+" /etc/resolve.conf):0" | tee -a ~/.bashrc
+  echo "export LIBGL_ALWAYS_INDIRECT=1" | tee -a ~/.bashrc
+}
+
+function install_genie() {
+  wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+  dpkg -i packages-microsoft-prod.deb
+  echo "deb [trusted=yes] https://wsl-translinux.arkane-systems.net/apt/ /" | tee /etc/apt/sources.list.d/wsl-translinux.list
+  apt update
+  apt install dotnet-runtime-3.1 systemd-genie -y
+}
+
+function copy_file() {
+  cp ./.start_genie ~/.start_genie
+  chmod +x ~/.start_genie
+}
+
+function main() {
+  check_root
+  update
+  install_desktop
+  configure_bashrc
+  install_genie
+  copy_file
+}
+
+main

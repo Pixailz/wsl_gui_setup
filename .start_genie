@@ -1,0 +1,7 @@
+#!/bin/bash
+
+my_ip=$(ip -o -4 a s eth0 | cut -d" " -f7 | cut -d"/" -f1)
+current_ip=$(cut -d" " -f12 /mnt/c/Users/pixai/OneDrive/Bureau/config.xlaunch | sed '1d' | cut -d'"' -f2)
+
+sed -i "s/${current_ip}/${my_ip}/g" /mnt/c/Users/pixai/OneDrive/Bureau/config.xlaunch
+genie -i
